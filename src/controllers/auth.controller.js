@@ -1,38 +1,50 @@
-const bcrypt = require("bcryptjs");
-const User = require("../models/user.model");
-const generateToken = require("../utils/generateToken");
+import User from "../models/User.js";
+
+import bcrypt from "bcryptjs";
+
+import generateToken
+from "../utils/generateToken.js";
 
 
 // REGISTER
-const register = async (req, res) => {
+export const register = async (
+  req,
+  res
+) => {
   try {
-    const { name, email, password } = req.body;
+    const {
+      name,
+      email,
+      password,
+    } = req.body;
 
-    // Check existing user
-    const existingUser = await User.findOne({ email });
+    const userExists =
+      await User.findOne({ email });
 
-    if (existingUser) {
+    if (userExists) {
       return res.status(400).json({
-        message: "User already exists",
+        message:
+          "User already exists",
       });
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword =
+      await bcrypt.hash(password, 10);
 
-    // Create user
-    const user = await User.create({
-      name,
-      email,
-      password: hashedPassword,
-    });
-
-    // Generate token
-    const token = generateToken(user);
+    const user =
+      await User.create({
+        name,
+        email,
+        password:
+          hashedPassword,
+      });
 
     res.status(201).json({
-      message: "User registered successfully",
-      token,
+      token: generateToken(
+        user._id,
+        user.role
+      ),
+
       user,
     });
   } catch (error) {
@@ -44,37 +56,45 @@ const register = async (req, res) => {
 
 
 // LOGIN
-const login = async (req, res) => {
+export const login = async (
+  req,
+  res
+) => {
   try {
-    const { email, password } = req.body;
+    const {
+      email,
+      password,
+    } = req.body;
 
-    // Find user
-    const user = await User.findOne({ email });
+    const user =
+      await User.findOne({ email });
 
     if (!user) {
       return res.status(400).json({
-        message: "Invalid credentials",
+        message:
+          "Invalid credentials",
       });
     }
 
-    // Compare password
-    const isMatch = await bcrypt.compare(
-      password,
-      user.password
-    );
+    const isMatch =
+      await bcrypt.compare(
+        password,
+        user.password
+      );
 
     if (!isMatch) {
       return res.status(400).json({
-        message: "Invalid credentials",
+        message:
+          "Invalid credentials",
       });
     }
 
-    // Generate token
-    const token = generateToken(user);
+    res.json({
+      token: generateToken(
+        user._id,
+        user.role
+      ),
 
-    res.status(200).json({
-      message: "Login successful",
-      token,
       user,
     });
   } catch (error) {
@@ -86,14 +106,9 @@ const login = async (req, res) => {
 
 
 // PROFILE
-const profile = async (req, res) => {
-  res.status(200).json({
-    user: req.user,
-  });
-};
-
-module.exports = {
-  register,
-  login,
-  profile,
+export const getProfile = async (
+  req,
+  res
+) => {
+  res.json(req.user);
 };

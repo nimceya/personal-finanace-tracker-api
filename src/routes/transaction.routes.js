@@ -1,71 +1,37 @@
-const router = require("express").Router();
+import express from "express";
 
-const authMiddleware = require(
-  "../middlewares/auth.middleware"
-);
-const validate = require(
-  "../middlewares/validate.middleware"
-);
+import protect from "../middlewares/auth.middleware.js";
+import validate from "../middlewares/validate.middleware.js";
 
-const transactionSchema = require(
-  "../validators/transaction.validator"
-);
-
-
-const {
+import {
   createTransaction,
   getTransactions,
   updateTransaction,
   deleteTransaction,
   monthlySummary,
-} = require(
-  "../controllers/transaction.controller"
-);
+} from "../controllers/transaction.controller.js";
 
+import { transactionSchema } from "../schemas/transaction.schema.js";
 
-// Create
+const router = express.Router();
+
 router.post(
   "/",
-  authMiddleware,
-  createTransaction
-);
-router.post(
-  "/",
-  authMiddleware,
+  protect,
   validate(transactionSchema),
   createTransaction
 );
 
+router.get("/", protect, getTransactions);
 
-// Get all
-router.get(
-  "/",
-  authMiddleware,
-  getTransactions
-);
+router.put("/:id", protect, updateTransaction);
 
+router.delete("/:id", protect, deleteTransaction);
 
-// Monthly summary
 router.get(
   "/monthly-summary",
-  authMiddleware,
+  protect,
   monthlySummary
 );
 
-
-// Update
-router.put(
-  "/:id",
-  authMiddleware,
-  updateTransaction
-);
-
-
-// Delete
-router.delete(
-  "/:id",
-  authMiddleware,
-  deleteTransaction
-);
-
-module.exports = router;
+export default router;

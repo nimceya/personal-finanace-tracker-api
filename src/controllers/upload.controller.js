@@ -5,7 +5,7 @@ const cloudinary = require(
 );
 
 const User = require(
-  "../models/user.model"
+  "../models/user"
 );
 
 

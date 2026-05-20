@@ -1,33 +1,26 @@
-const Transaction = require(
-  "../models/transaction.model"
-);
-
+import Transaction from "../models/Transaction.js";
 
 // CREATE TRANSACTION
-const createTransaction = async (req, res) => {
+export const createTransaction = async (req, res) => {
   try {
-
     const {
       title,
       amount,
       type,
       category,
+      date,
     } = req.body;
 
-    const transaction =
-      await Transaction.create({
-        title,
-        amount,
-        type,
-        category,
-        user: req.user._id,
-      });
-
-    res.status(201).json({
-      message: "Transaction created",
-      transaction,
+    const transaction = await Transaction.create({
+      user: req.user._id,
+      title,
+      amount,
+      type,
+      category,
+      date,
     });
 
+    res.status(201).json(transaction);
   } catch (error) {
     res.status(500).json({
       message: error.message,
@@ -35,20 +28,14 @@ const createTransaction = async (req, res) => {
   }
 };
 
-
-// GET USER TRANSACTIONS
-const getTransactions = async (req, res) => {
+// GET ALL
+export const getTransactions = async (req, res) => {
   try {
+    const transactions = await Transaction.find({
+      user: req.user._id,
+    }).sort({ createdAt: -1 });
 
-    const transactions =
-      await Transaction.find({
-        user: req.user._id,
-      }).sort({ createdAt: -1 });
-
-    res.status(200).json({
-      transactions,
-    });
-
+    res.json(transactions);
   } catch (error) {
     res.status(500).json({
       message: error.message,
@@ -56,35 +43,30 @@ const getTransactions = async (req, res) => {
   }
 };
 
-
-// UPDATE TRANSACTION
-const updateTransaction = async (req, res) => {
+// UPDATE
+export const updateTransaction = async (req, res) => {
   try {
-
-    const transaction =
-      await Transaction.findOne({
-        _id: req.params.id,
-        user: req.user._id,
-      });
+    const transaction = await Transaction.findById(req.params.id);
 
     if (!transaction) {
       return res.status(404).json({
-        message: "Transaction not found",
+        message: "Not found",
       });
     }
 
-    const updatedTransaction =
-      await Transaction.findByIdAndUpdate(
-        req.params.id,
-        req.body,
-        { new: true }
-      );
+    if (transaction.user.toString() !== req.user._id.toString()) {
+      return res.status(401).json({
+        message: "Not authorized",
+      });
+    }
 
-    res.status(200).json({
-      message: "Transaction updated",
-      updatedTransaction,
-    });
+    const updated = await Transaction.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true }
+    );
 
+    res.json(updated);
   } catch (error) {
     res.status(500).json({
       message: error.message,
@@ -92,29 +74,26 @@ const updateTransaction = async (req, res) => {
   }
 };
 
-
-// DELETE TRANSACTION
-const deleteTransaction = async (req, res) => {
+// DELETE
+export const deleteTransaction = async (req, res) => {
   try {
-
-    const transaction =
-      await Transaction.findOne({
-        _id: req.params.id,
-        user: req.user._id,
-      });
+    const transaction = await Transaction.findById(req.params.id);
 
     if (!transaction) {
       return res.status(404).json({
-        message: "Transaction not found",
+        message: "Not found",
+      });
+    }
+
+    if (transaction.user.toString() !== req.user._id.toString()) {
+      return res.status(401).json({
+        message: "Not authorized",
       });
     }
 
     await transaction.deleteOne();
 
-    res.status(200).json({
-      message: "Transaction deleted",
-    });
-
+    res.json({ message: "Deleted" });
   } catch (error) {
     res.status(500).json({
       message: error.message,
@@ -122,48 +101,26 @@ const deleteTransaction = async (req, res) => {
   }
 };
 
-
-// MONTHLY SUMMARY
-const monthlySummary = async (req, res) => {
+export const monthlySummary = async (req, res) => {
   try {
-
-    const summary =
-      await Transaction.aggregate([
-        {
-          $match: {
-            user: req.user._id,
-          },
+    const summary = await Transaction.aggregate([
+      {
+        $match: {
+          user: req.user._id,
         },
-
-        {
-          $group: {
-            _id: {
-              category: "$category",
-              type: "$type",
-            },
-
-            total: {
-              $sum: "$amount",
-            },
-          },
+      },
+      {
+        $group: {
+          _id: "$category",
+          total: { $sum: "$amount" },
         },
-      ]);
+      },
+    ]);
 
-    res.status(200).json({
-      summary,
-    });
-
+    res.json(summary);
   } catch (error) {
     res.status(500).json({
       message: error.message,
     });
   }
-};
-
-module.exports = {
-  createTransaction,
-  getTransactions,
-  updateTransaction,
-  deleteTransaction,
-  monthlySummary,
 };

@@ -12,4 +12,4 @@ const errorMiddleware = (
   });
 };
 
-module.exports = errorMiddleware;
+export default errorMiddleware;
