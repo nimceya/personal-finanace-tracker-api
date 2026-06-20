@@ -1,0 +1,127 @@
+// import mongoose from "mongoose";
+// import dotenv from "dotenv";
+// import app from "./src/app.js"; 
+
+// dotenv.config();
+
+// const PORT = process.env.PORT || 5000;
+
+// mongoose
+//   .connect(
+//     process.env.NODE_ENV === "development"
+//       ? process.env.MONGO_URI_DEV
+//       : process.env.MONGO_URI_PRO
+//   )
+//   .then(() => {
+//     console.log("✅ MongoDB Connected");
+
+//     app.listen(PORT, () => {
+//       console.log(`Server running on port ${PORT}`);
+//     });
+//   })
+//   .catch((err) => {
+//     console.log("❌ Connection err:", err);
+//   });
+import express from 'express'; 
+const app = express();
+
+import dotenv from "dotenv";
+//const cors= require("cors");
+dotenv.config();
+import cors from "cors";
+import mongoose from "mongoose";
+import authRoutes from "./routes/auth.js";
+import adminRoutes from "./routes/admin.js";
+import transactionRoutes from "./routes/Transaction.js";
+import swaggerUi from 'swagger-ui-express';
+
+import {logger} from "./middlewares/logger.js"
+import { Notfound } from './middlewares/NotFound.js';
+import uploadRoutes from "./routes/upload.js"
+
+const PORT = process.env.PORT  || 5000;
+import {limiter} from "./middlewares/ratelimit.js"
+import { swaggerSpec } from './utils/Swagger.js';
+
+const users=[
+    { id: 1, name: "John Doe", email: "axmed@gmail.com"},
+    { id: 2, name: "Jane Smith", email: "jane@gmail.com"},
+    { id: 3, name: "Alice Johnson", email: "alice@gmail.com"}
+]
+app.use(limiter);
+
+// const now = new Date();
+// const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+// const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+// console.log("Start of Month:", startOfMonth);
+// console.log("End of Month:", endOfMonth);
+
+
+const allowedOrigins = [
+  'http://localhost:5175',
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'http://localhost:5879',
+  'http://localhost:5177',
+  'http://localhost:5174',
+  'https://mentroship-api.onrender.com',
+  'https://mentroship-api.vercel.app',
+  'https://task-management-system-xi-henna.vercel.app',
+  "https://personal-finance-tracker-244x-el1t5vae5.vercel.app"
+];
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
+
+
+// Middleware to log requests
+app.use(logger);
+// Middleware to handle 404 Not Found
+
+// Middleware to parse JSON bodies
+app.use(express.json());
+
+app.use('/api/docs/Transaction', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use("/api/auth",authRoutes)
+
+app.use("/api/transactions",transactionRoutes);
+app.use("/admin",adminRoutes);
+app.use("/api/upload",uploadRoutes);
+
+
+
+app.get("/", (req, res) => {
+    res.send(users);
+});
+
+
+app.get("/users", (req, res) => {
+    res.send(users);
+}
+);
+
+app.use(Notfound);
+
+// mongoose.connect(process.env.NODE_ENV =="development" ? process.env.MONGO_URI_DEV : process.env.MONGO_URL_PRO)
+// mongoose.connect(process.env.NODE_ENV === "development" ? process.env.MONGO_URI_DEV : process.env.MONGO_URL_PRO)
+
+//   .then(() => console.log('✅ MongoDB connected locally'))
+//   .catch(err => console.error('❌ Connection error:', err));
+
+mongoose.connect(process.env.NODE_ENV =="development"? process.env.MONGO_URL: process.env.MONGO_URL)
+  .then(() => console.log('✅ MongoDB connected locally'))
+  .catch(err => console.error('❌ Connection error:', err));
+app.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`);
+});

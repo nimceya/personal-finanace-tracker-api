@@ -34,4 +34,4 @@ const User = mongoose.model(
   userSchema
 );
 
-export default user;
+export default User;
